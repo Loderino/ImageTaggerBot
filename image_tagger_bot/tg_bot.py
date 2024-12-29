@@ -12,10 +12,11 @@ from telegram.ext import (
 )
 
 from image_tagger_bot import BotStates, CMD_TO_STATE
+from image_tagger_bot.json_files_handler import read_json_file
 from image_tagger_bot.modes.generation.photo_handler import PhotoHandler
 from image_tagger_bot.utils.common_functions import read_pickle_data
 from image_tagger_bot.modes.markup.message_parser import MarkupMessageHandler
-from constants import BOT_TOKEN, CONV_NAME, PERSISTENCE_PATH
+from constants import BOT_TOKEN, CONV_NAME, PERSISTENCE_PATH, TOP_PATH
 
 class TGBot:
     def __init__(self) -> None:
@@ -109,6 +110,7 @@ class TGBot:
             BotStates.MARKUP:[
                 CommandHandler("help", self.help_command),
                 CommandHandler("retry", self.message_handler.send_photo),
+                CommandHandler("top", self.message_handler.send_top_message),
                 CommandHandler("generation_mode", self.generation_mode),
                 MessageHandler(filters.TEXT, self.message_handler.handle_message),
             ]
@@ -123,6 +125,7 @@ class TGBot:
         return BotStates.GENERATION
     
     async def markup_mode(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        context.user_data["marked_pictures"] = read_json_file(TOP_PATH).get(update.effective_chat.id, 0)
         await context.bot.set_my_commands(
             CMD_TO_STATE[BotStates.MARKUP], scope=BotCommandScopeChat(chat_id=update.effective_chat.id)
         )
